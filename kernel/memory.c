@@ -5,9 +5,9 @@
 
 #define PG_SIZE 4096
 
-// 0xc009f000内核主线程栈顶， 0xc009e00为内核主线程PCB，
-// 位图地址安排在0xc009a00，所以位图一共4个页框大小，表示512MB内存
-#define MEM_BITMAP_BASE 0xc009a00
+// 0xc009f000内核主线程栈顶， 0xc009e000为内核主线程PCB，
+// 位图地址安排在0xc009a000，所以位图一共4个页框大小，表示512MB内存
+#define MEM_BITMAP_BASE 0xc009a000
 // 堆起始跨过了起始1MB，起始这里已经储存这页目录和页表了
 #define K_HEAP_START 0xc0100000
 
