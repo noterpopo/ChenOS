@@ -2,6 +2,7 @@
 #include "init.h"
 #include "debug.h"
 #include "thread.h"
+#include "console.h"
 
 void k_thread_a(void* arg);
 int main(void) {
@@ -10,7 +11,7 @@ int main(void) {
     thread_start("k_thread_a", 31, k_thread_a, "popo ");
     intr_enable();
     while(1) {
-        put_str("Mian ");
+        console_put_str("Main ");
     }
     return 0;
 }
@@ -18,6 +19,6 @@ int main(void) {
 void k_thread_a(void* arg) {
     char* para = arg;
     while(1) {
-        put_str(para);
+        console_put_str(para);
     }
 }

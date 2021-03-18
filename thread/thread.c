@@ -88,6 +88,29 @@ void schedule() {
     switch_to(cur, next);
 }
 
+void thread_block(enum task_status stat) {
+    ASSERT((stat == TASK_BLOCKED) || (stat == TASK_HANGING) || (stat == TASK_WAITTING));
+    enum intr_status old_status = intr_disable();
+    struct task_struct* cur_thread = running_thread();
+    cur_thread->status = stat;
+    schedule();
+    intr_set_status(old_status);
+}
+
+void thread_unblock(struct task_struct* pthread) {
+    enum intr_status old_status = intr_disable();
+    ASSERT((pthread->status == TASK_BLOCKED) || (pthread->status == TASK_HANGING) || (pthread->status == TASK_WAITTING));
+    if (pthread->status != TASK_READY) {
+        ASSERT(!elem_find(&thread_ready_list, &pthread->general_tag));
+        if (elem_find(&thread_ready_list, &pthread->general_tag)) {
+            PAINC("thread_unblock: block thread in ready list\n");
+        }
+        list_push(&thread_ready_list, &pthread->general_tag);
+        pthread->status = TASK_READY;
+    }
+    intr_set_status(old_status);
+}
+
 void thread_init() {
     put_str("thread_init_start\n");
     list_init(&thread_ready_list);

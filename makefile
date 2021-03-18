@@ -19,16 +19,18 @@ OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/string.o \
 		$(BUILD_DIR)/memory.o \
 		$(BUILD_DIR)/bitmap.o \
+		$(BUILD_DIR)/sync.o \
 		$(BUILD_DIR)/thread.o \
-		$(BUILD_DIR)/list.o
+		$(BUILD_DIR)/list.o \
+		$(BUILD_DIR)/console.o
 
 
 $(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h \
-				lib/stdint.h kernel/init.h thread/thread.h
+				lib/stdint.h kernel/init.h thread/thread.h device/console.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h \
-				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h
+				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h device/console.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/interrupt.o: kernel/interrupt.c kernel/interrupt.h lib/kernel/print.h \
@@ -59,7 +61,15 @@ $(BUILD_DIR)/thread.o: thread/thread.c  thread/thread.h lib/kernel/list.h lib/ke
 				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h
 				$(CC) $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/list.o: lib/kernel/list.c  lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
+$(BUILD_DIR)/list.o: lib/kernel/list.c lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/sync.o: thread/sync.c thread/sync.h lib/kernel/list.h thread/thread.h lib/kernel/list.h lib/string.h kernel/debug.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/console.o: device/console.c device/console.h thread/sync.h thread/thread.h lib/kernel/print.h \
 				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h
 				$(CC) $(CFLAGS) $< -o $@
 
