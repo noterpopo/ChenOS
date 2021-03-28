@@ -26,15 +26,18 @@ OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/keyboard.o \
 		$(BUILD_DIR)/ioqueue.o \
 		$(BUILD_DIR)/tss.o \
-		$(BUILD_DIR)/process.o
+		$(BUILD_DIR)/process.o \
+		$(BUILD_DIR)/syscall.o \
+		$(BUILD_DIR)/syscall-init.o \
+		$(BUILD_DIR)/stdio.o
 
 
-$(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h \
-				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h
+$(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h lib/user/syscall.h \
+				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h userproc/syscall_init.h lib/stdio.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h userproc/tss.h \
-				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h device/console.h device/keyboard.h
+				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h device/console.h device/keyboard.h userproc/syscall_init.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/interrupt.o: kernel/interrupt.c kernel/interrupt.h lib/kernel/print.h \
@@ -62,7 +65,7 @@ $(BUILD_DIR)/memory.o: kernel/memory.c kernel/memory.h lib/kernel/bitmap.h lib/k
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/thread.o: thread/thread.c  thread/thread.h lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
-				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h userproc/process.h
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h userproc/process.h thread/sync.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/list.o: lib/kernel/list.c lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
@@ -91,6 +94,18 @@ $(BUILD_DIR)/tss.o: userproc/tss.c userproc/tss.h thread/thread.h lib/kernel/pri
 
 $(BUILD_DIR)/process.o: userproc/process.c userproc/process.h userproc/userprog.h thread/thread.h lib/kernel/print.h lib/kernel/bitmap.h \
 				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h kernel/memory.h userproc/tss.h device/console.h lib/kernel/list.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/syscall.o: lib/user/syscall.c lib/user/syscall.h userproc/userprog.h thread/thread.h lib/kernel/print.h kernel/debug.h \
+				lib/stdint.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/syscall-init.o: userproc/syscall_init.c userproc/syscall_init.h lib/user/syscall.h thread/thread.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/stdio.o: lib/stdio.c lib/stdio.h lib/user/syscall.h thread/thread.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/kernel.o: kernel/kernel.S
