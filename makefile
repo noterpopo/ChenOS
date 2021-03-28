@@ -3,9 +3,9 @@ ENTRY_POINT = 0xc0001500
 AS = nasm
 CC = gcc
 LD = ld
-LIB = -I lib/ -I lib/kernel/ -I lib/user/ -I kernel/ -I device/ -I thread/
+LIB = -I lib/ -I lib/kernel/ -I lib/user/ -I kernel/ -I device/ -I thread/ -I userproc/
 ASFLAG = -f elf
-CFLAGS = -m32 -ffreestanding -nostdlib -mno-red-zone -Wall $(LIB) -c -W -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS = -m32 -ffreestanding -nostdlib -mno-red-zone -Wall $(LIB) -c -W -Wstrict-prototypes -Wmissing-prototypes -fno-stack-protector
 LDFLAGS = -m elf_i386 -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map
 OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/init.o \
@@ -24,19 +24,21 @@ OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/list.o \
 		$(BUILD_DIR)/console.o \
 		$(BUILD_DIR)/keyboard.o \
-		$(BUILD_DIR)/ioqueue.o
+		$(BUILD_DIR)/ioqueue.o \
+		$(BUILD_DIR)/tss.o \
+		$(BUILD_DIR)/process.o
 
 
 $(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h \
-				lib/stdint.h kernel/init.h thread/thread.h device/console.h
+				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h
 				$(CC) $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h \
+$(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h userproc/tss.h \
 				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h device/console.h device/keyboard.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/interrupt.o: kernel/interrupt.c kernel/interrupt.h lib/kernel/print.h \
-				lib/stdint.h kernel/global.h lib/kernel/io.h
+				lib/stdint.h kernel/global.h lib/kernel/io.h kernel/debug.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/timer.o: device/timer.c device/timer.h lib/kernel/print.h \
@@ -60,7 +62,7 @@ $(BUILD_DIR)/memory.o: kernel/memory.c kernel/memory.h lib/kernel/bitmap.h lib/k
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/thread.o: thread/thread.c  thread/thread.h lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
-				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/memory.h userproc/process.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/list.o: lib/kernel/list.c lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
@@ -81,6 +83,14 @@ $(BUILD_DIR)/keyboard.o: device/keyboard.c device/keyboard.h thread/sync.h threa
 
 $(BUILD_DIR)/ioqueue.o: device/ioqueue.c device/ioqueue.h thread/sync.h thread/thread.h lib/kernel/print.h \
 				lib/stdint.h kernel/interrupt.h kernel/global.h lib/kernel/io.h kernel/debug.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/tss.o: userproc/tss.c userproc/tss.h thread/thread.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/process.o: userproc/process.c userproc/process.h userproc/userprog.h thread/thread.h lib/kernel/print.h lib/kernel/bitmap.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h kernel/memory.h userproc/tss.h device/console.h lib/kernel/list.h lib/string.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/kernel.o: kernel/kernel.S

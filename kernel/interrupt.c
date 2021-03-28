@@ -3,6 +3,7 @@
 #include "global.h"
 #include "io.h"
 #include "print.h"
+#include "debug.h"
 
 #define PIC_M_CTRL 0x20
 #define PIC_M_DATA 0x21
@@ -164,7 +165,7 @@ void idt_init() {
     excecption_init();
     pic_init();
 
-    uint64_t idt_operand = ((sizeof(idt) - 1) | ((uint64_t)((uint32_t)idt << 16)));
+    uint64_t idt_operand = ((sizeof(idt) - 1) | (uint64_t)idt << 16);
     asm volatile("lidt %0" : : "m" (idt_operand));
     put_str("idt_init done\n");
 }

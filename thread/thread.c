@@ -2,15 +2,16 @@
 #include "stdint.h"
 #include "string.h"
 #include "global.h"
-#include "memory.h"
 #include "interrupt.h"
 #include "debug.h"
+#include "process.h"
 #define PG_SIZE 4096
 
 struct task_struct* main_thread;
 struct list thread_ready_list;
 struct list thread_all_list;
 static struct list_elem* thread_tag;
+
 
 extern void switch_to(struct task_struct* cur, struct task_struct* next);
 
@@ -78,13 +79,14 @@ void schedule() {
         cur->ticks = cur->priority;
         cur->status = TASK_READY;
     } else {
-
+        
     }
     ASSERT(!list_empty(&thread_ready_list));
     thread_tag = NULL;
     thread_tag = list_pop(&thread_ready_list);
     struct task_struct* next = elem2entry(struct task_struct, general_tag, thread_tag);
     next->status = TASK_RUNNING;
+    process_activite(next);
     switch_to(cur, next);
 }
 
