@@ -62,6 +62,7 @@ struct task_struct {
     struct list_elem all_list_tag;
     uint32_t* pgdir;
     struct virtual_addr userproc_vaddr;
+    struct mem_block_desc u_block_desc[DESC_CNT];
     uint32_t stack_magic;
 };
 extern struct list thread_ready_list;

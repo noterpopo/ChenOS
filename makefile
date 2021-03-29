@@ -33,7 +33,7 @@ OBJS =  $(BUILD_DIR)/main.o \
 
 
 $(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h lib/user/syscall.h \
-				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h userproc/syscall_init.h lib/stdio.h
+				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h userproc/syscall_init.h lib/stdio.h kernel/memory.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h userproc/tss.h \
@@ -61,7 +61,7 @@ $(BUILD_DIR)/bitmap.o: lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kern
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/memory.o: kernel/memory.c kernel/memory.h lib/kernel/bitmap.h lib/kernel/print.h \
-				lib/string.h lib/stdint.h kernel/debug.h
+				lib/string.h lib/stdint.h kernel/debug.h lib/kernel/list.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/thread.o: thread/thread.c  thread/thread.h lib/kernel/list.h lib/kernel/bitmap.c lib/kernel/bitmap.h lib/string.h kernel/debug.h lib/kernel/print.h \
@@ -101,7 +101,7 @@ $(BUILD_DIR)/syscall.o: lib/user/syscall.c lib/user/syscall.h userproc/userprog.
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/syscall-init.o: userproc/syscall_init.c userproc/syscall_init.h lib/user/syscall.h thread/thread.h lib/kernel/print.h \
-				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h kernel/memory.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/stdio.o: lib/stdio.c lib/stdio.h lib/user/syscall.h thread/thread.h lib/kernel/print.h \
