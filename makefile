@@ -29,14 +29,16 @@ OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/process.o \
 		$(BUILD_DIR)/syscall.o \
 		$(BUILD_DIR)/syscall-init.o \
-		$(BUILD_DIR)/stdio.o
+		$(BUILD_DIR)/stdio.o \
+		$(BUILD_DIR)/stdio-kernel.o \
+		$(BUILD_DIR)/ide.o
 
 
-$(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h lib/user/syscall.h \
+$(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h lib/user/syscall.h device/ide.h\
 				lib/stdint.h kernel/init.h thread/thread.h device/console.h userproc/process.h userproc/syscall_init.h lib/stdio.h kernel/memory.h
 				$(CC) $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h userproc/tss.h \
+$(BUILD_DIR)/init.o: kernel/init.c kernel/init.h lib/kernel/print.h userproc/tss.h device/ide.h\
 				lib/stdint.h kernel/interrupt.h device/timer.h kernel/memory.h thread/thread.h device/console.h device/keyboard.h userproc/syscall_init.h
 				$(CC) $(CFLAGS) $< -o $@
 
@@ -45,7 +47,7 @@ $(BUILD_DIR)/interrupt.o: kernel/interrupt.c kernel/interrupt.h lib/kernel/print
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/timer.o: device/timer.c device/timer.h lib/kernel/print.h \
-				lib/stdint.h lib/kernel/io.h
+				lib/stdint.h lib/kernel/io.h lib/stdint.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/debug.o: kernel/debug.c kernel/debug.h lib/kernel/print.h \
@@ -106,6 +108,14 @@ $(BUILD_DIR)/syscall-init.o: userproc/syscall_init.c userproc/syscall_init.h lib
 
 $(BUILD_DIR)/stdio.o: lib/stdio.c lib/stdio.h lib/user/syscall.h thread/thread.h lib/kernel/print.h \
 				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/stdio-kernel.o: lib/kernel/stdio-kernel.c lib/kernel/stdio-kernel.h lib/stdio.h lib/kernel/print.h \
+				lib/stdint.h kernel/interrupt.h kernel/global.h kernel/debug.h device/console.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/ide.o: device/ide.c device/ide.h thread/sync.h lib/kernel/list.h thread/sync.h lib/kernel/bitmap.h kernel/interrupt.h thread/thread.h\
+				lib/stdint.h lib/kernel/io.h kernel/global.h kernel/debug.h kernel/memory.h lib/kernel/stdio-kernel.h device/console.h lib/kernel/list.h lib/string.h
 				$(CC) $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/kernel.o: kernel/kernel.S

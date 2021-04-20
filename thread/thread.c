@@ -9,6 +9,7 @@
 #define PG_SIZE 4096
 
 struct task_struct* main_thread;
+struct task_struct* ide_thread;
 struct list thread_ready_list;
 struct list thread_all_list;
 static struct list_elem* thread_tag;
@@ -92,6 +93,9 @@ void schedule() {
     } else {
         
     }
+    if (list_empty(&thread_ready_list)) {
+        thread_unblock(ide_thread);
+    }
     ASSERT(!list_empty(&thread_ready_list));
     thread_tag = NULL;
     thread_tag = list_pop(&thread_ready_list);
@@ -124,11 +128,29 @@ void thread_unblock(struct task_struct* pthread) {
     intr_set_status(old_status);
 }
 
+static void idle(void* arg) {
+    while(1) {
+        thread_block(TASK_BLOCKED);
+        asm volatile ("sti; hlt": : : "memory");
+    }
+}
+
+void thread_yield(void) {
+    struct task_struct* cur = (struct task_struct*)running_thread();
+    enum intr_status old_status = intr_disable();
+    ASSERT(!elem_find(&thread_ready_list, &cur->general_tag));
+    list_append(&thread_ready_list, &cur->general_tag);
+    cur->status = TASK_READY;
+    schedule();
+    intr_set_status(old_status);
+}
+
 void thread_init() {
     put_str("thread_init_start\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
     lock_init(&pid_lock);
     make_main_thread();
+    ide_thread = thread_start("idle", 10, idle, NULL);
     put_str("thread_init_done\n");
 }

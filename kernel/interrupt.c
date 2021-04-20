@@ -45,8 +45,8 @@ static void pic_init(void) {
     outb(PIC_S_DATA, 0x02);
     outb(PIC_S_DATA, 0x01);
 
-    outb(PIC_M_DATA, 0xfc);
-    outb(PIC_S_DATA, 0xff);
+    outb(PIC_M_DATA, 0xf8);
+    outb(PIC_S_DATA, 0xbf);
 
     put_str("pic_init done\n");
 }
@@ -64,6 +64,7 @@ static void idt_desc_init(void) {
     for (i = 0; i < IDT_DESC_CNT; i++) {
         make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, intr_entry_table[i]);
     }
+    make_idt_desc(&idt[0x76], IDT_DESC_ATTR_DPL0, intr_entry_table[0x2e]);
     make_idt_desc(&idt[lastIndex], IDT_DESC_ATTR_DPL3, syscall_handler);
     put_str("idt_desc_init done\n");
 }

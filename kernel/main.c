@@ -8,6 +8,7 @@
 #include "syscall.h"
 #include "stdio.h"
 #include "memory.h"
+#include "ide.h"
 
 void k_thread_a(void* arg);
 void k_thread_b(void* arg);
@@ -17,12 +18,8 @@ int test_var_a = 0, test_var_b = 0;
 int main(void) {
     put_str("I am kernel.\n");
     init_all();
-    process_execute(u_prog_a, "u_a");
-    process_execute(u_prog_b, "u_b");
     intr_enable();
-    console_put_char('\n');
-    thread_start("kthread_a", 31, k_thread_a, "argA ");
-    thread_start("kthread_b", 31, k_thread_b, "argB ");
+    ide_init();
     while(1);
     return 0;
 }

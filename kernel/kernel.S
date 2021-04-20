@@ -89,7 +89,7 @@ VECTOR 0x2a,ZERO	;保留
 VECTOR 0x2b,ZERO	;保留
 VECTOR 0x2c,ZERO	;ps/2鼠标
 VECTOR 0x2d,ZERO	;fpu浮点单元异常
-VECTOR 0x2e,ZERO	;硬盘
+VECTOR 0x76,ZERO	;硬盘
 VECTOR 0x2f,ZERO	;保留
 
 [bits 32]
