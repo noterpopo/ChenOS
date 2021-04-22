@@ -14,6 +14,45 @@
 #include "keyboard.h"
 #include "ioqueue.h"
 
+struct partition* cur_part;
+
+static bool mount_partition(struct list_elem* pelem, int arg) {
+    char* part_name = (char*)arg;
+    struct partition* part = elem2entry(struct partition, part_tag, pelem);
+    if(!strcmp(part->name, part_name)) {
+        cur_part = part;
+        struct disk* hd = cur_part->my_disk;
+        struct super_block* sb_buf = (struct super_block*)sys_malloc(SECTOR_SIZE);
+        cur_part->sb = (struct super_block*)sys_malloc(sizeof(struct super_block));
+        if (cur_part->sb == NULL) {
+            PAINC("alloc memory failed!");
+        }
+        memset(sb_buf, 0, SECTOR_SIZE);
+        ide_read(hd, cur_part->start_lba + 1, sb_buf, 1);
+        memcpy(cur_part->sb, sb_buf, sizeof(struct super_block));
+
+        cur_part->block_bitmap.bits = (uint8_t*)sys_malloc(sb_buf->block_bitmap_sects * SECTOR_SIZE);
+        if (cur_part->block_bitmap.bits == NULL) {
+            PAINC("alloc memory failed!");
+        }
+        cur_part->block_bitmap.btmp_bytes_len = sb_buf->block_bitmap_sects * SECTOR_SIZE;
+        ide_read(hd, sb_buf->block_bitmap_lba, cur_part->block_bitmap.bits, sb_buf->block_bitmap_sects);
+
+        cur_part->inode_bitmap.bits = (uint8_t*)sys_malloc(sb_buf->inode_bitmap_sects * SECTOR_SIZE);
+        if (cur_part->inode_bitmap.bits == NULL) {
+            PAINC("alloc memory failed!");
+        }
+        cur_part->inode_bitmap.btmp_bytes_len = sb_buf->inode_bitmap_sects * SECTOR_SIZE;
+        ide_read(hd, sb_buf->inode_bitmap_lba, cur_part->inode_bitmap.bits, sb_buf->inode_bitmap_sects);
+
+        list_init(&cur_part->open_inodes);
+        printk("mount %s done\n", part->name);
+
+        return true;
+    }
+    return false;
+}
+
 static void partition_format(struct partition* part) {
     uint32_t boot_sector_sects = 1;
     uint32_t super_block_sects = 1;
@@ -133,4 +172,6 @@ void filesys_init() {
         channel_no++;
     }
     sys_free(sb_buf);
+    char default_part[8] = "sdb1";
+    list_traversal(&partition_list, mount_partition, (int)default_part);
 }
