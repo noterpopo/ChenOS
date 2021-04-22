@@ -9,6 +9,7 @@
 #include "stdio.h"
 #include "memory.h"
 #include "ide.h"
+#include "fs.h"
 
 void k_thread_a(void* arg);
 void k_thread_b(void* arg);
@@ -20,6 +21,7 @@ int main(void) {
     init_all();
     intr_enable();
     ide_init();
+    filesys_init();
     while(1);
     return 0;
 }
