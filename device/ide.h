@@ -4,6 +4,7 @@
 #include "sync.h"
 #include "list.h"
 #include "bitmap.h"
+#include "super_block.h"
 
 struct partition {
     uint32_t start_lba;

@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "list.h"
 #include "memory.h"
+#define MAX_FILES_OPEN_PER_PROC 8
 typedef void thread_func(void*);
 typedef int16_t pid_t;
 
@@ -58,6 +59,7 @@ struct task_struct {
     uint8_t priority;
     uint8_t ticks;
     uint32_t elapsed_ticks;
+    int32_t fd_table[MAX_FILES_OPEN_PER_PROC];
     struct list_elem general_tag;
     struct list_elem all_list_tag;
     uint32_t* pgdir;

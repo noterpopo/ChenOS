@@ -1,7 +1,6 @@
 #include "fs.h"
 #include "super_block.h"
 #include "inode.h"
-#include "dir.h"
 #include "stdint.h"
 #include "stdio-kernel.h"
 #include "list.h"
@@ -13,6 +12,7 @@
 #include "console.h"
 #include "keyboard.h"
 #include "ioqueue.h"
+#include "file.h"
 
 struct partition* cur_part;
 
@@ -134,6 +134,94 @@ static void partition_format(struct partition* part) {
     sys_free(buf);
 }
 
+static int search_file(const char* pathname, struct path_search_record* searched_record) {
+    if (!strcmp(pathname, "/") || !strcmp(pathname, "/.") || !strcmp(pathname, "/..")) {
+        searched_record->parent_dir = &root_dir;
+        searched_record->file_type = FT_DIRECTORY;
+        searched_record->searched_path[0] = 0;
+        return 0;
+    }
+    uint32_t path_len = strlen(pathname);
+    ASSERT(pathname[0] == '/' && path_len > 1 && path_len < MAX_PATH_LEN);
+    char* sub_path = (char*)pathname;
+    struct dir* parent_dir = &root_dir;
+    struct dir_entry dir_e;
+    char name[MAX_FILE_NAME_LEN] = {0};
+    searched_record->parent_dir = parent_dir;
+    searched_record->file_type = FT_UNKNOWN;
+    uint32_t parent_node_no = 0;
+    sub_path = path_parse(sub_path, name);
+    while (name[0]) {
+        ASSERT(strlen(searched_record->searched_path) < 512);
+        strcat(searched_record->searched_path, "/");
+        strcat(searched_record->searched_path, name);
+
+        if (search_dir_entry(cur_part, parent_dir, name, &dir_e)) {
+            memset(name, 0, MAX_FILE_NAME_LEN);
+            if (sub_path) {
+                sub_path = path_parse(sub_path, name);
+            }
+            if (FT_DIRECTORY == dir_e.f_type) {
+                parent_node_no = parent_dir->inode->i_no;
+                dir_close(parent_dir);
+                parent_dir = dir_open(cur_part, dir_e.i_no);
+                searched_record->parent_dir = parent_dir;
+                continue;
+            } else if (FT_REGULAR == dir_e.f_type) {
+                searched_record->file_type = FT_REGULAR;
+                return dir_e.i_no;
+            }
+        } else {
+            return -1;
+        }
+    }
+    dir_close(searched_record->parent_dir);
+    searched_record->parent_dir = dir_open(cur_part, parent_node_no);
+    searched_record->file_type = FT_DIRECTORY;
+    return dir_e.i_no;
+}
+
+int32_t sys_open(const char* pathname, uint8_t flags) {
+    if (pathname[strlen(pathname) - 1] == '/') {
+        printk("can not open a directory %s\n", pathname);
+        return -1;
+    }
+    ASSERT(flags < 7);
+    int32_t fd = -1;
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    uint32_t pathname_depth = path_depth_cnt((char*)pathname);
+    int inode_no = search_file(pathname, &searched_record);
+    bool found = inode_no != -1;
+    if (searched_record.file_type == FT_DIRECTORY) {
+        printk("can not open a directory with open(), use opendir()\n");
+        dir_close(searched_record.parent_dir);
+        return -1;
+    }
+    uint32_t path_searched_depth = path_depth_cnt(searched_record.searched_path);
+    if (pathname_depth != path_searched_depth) {
+        printk("cannot access %s: Not a directory , subpath %s is not exist\n", pathname, searched_record.searched_path);
+        dir_close(searched_record.parent_dir);
+        return -1;
+    }
+    if (!found && !(flags & O_CREAT)) {
+        printk("in path %s, file %s is not exist\n", searched_record.searched_path, (strrchr(searched_record.searched_path, '/') + 1));
+        dir_close(searched_record.parent_dir);
+        return -1;
+    } else if (found && flags & O_CREAT) {
+        printk("file %s has exist\n", pathname);
+        dir_close(searched_record.parent_dir);
+        return -1;
+    }
+    switch (flags & O_CREAT) {
+        case O_CREAT:
+            printk("creating file\n");
+            fd = file_create(searched_record.parent_dir, (strrchr(pathname, '/')+1), flags);
+            dir_close(searched_record.parent_dir);
+    }
+    return fd;
+}
+
 void filesys_init() {
     uint8_t channel_no = 0, dev_no, part_idx = 0;
     struct super_block* sb_buf = (struct super_block*)sys_malloc(SECTOR_SIZE);
@@ -174,4 +262,9 @@ void filesys_init() {
     sys_free(sb_buf);
     char default_part[8] = "sdb1";
     list_traversal(&partition_list, mount_partition, (int)default_part);
+    open_root_dir(cur_part);
+    uint32_t fd_idx = 0;
+    while (fd_idx < MAX_FILE_OPEN) {
+        file_table[fd_idx++].fd_inode = NULL;
+    }
 }

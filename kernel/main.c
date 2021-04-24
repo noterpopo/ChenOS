@@ -22,6 +22,7 @@ int main(void) {
     intr_enable();
     ide_init();
     filesys_init();
+    sys_open("/file1", O_CREAT);
     while(1);
     return 0;
 }
