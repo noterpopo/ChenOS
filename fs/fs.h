@@ -21,6 +21,11 @@ enum oflags {
     O_RDWR,
     O_CREAT = 4
 };
+enum whence {
+    SEEK_SET = 1,
+    SEEK_CUR,
+    SEEK_END
+};
 struct path_search_record {
     char searched_path[MAX_PATH_LEN];
     struct dir* parent_dir;
@@ -28,4 +33,10 @@ struct path_search_record {
 };
 void filesys_init();
 int32_t sys_open(const char* pathname, uint8_t flags);
+int32_t sys_close(int32_t fd);
+int32_t sys_write(int32_t fd, const void* buf, uint32_t count);
+int32_t sys_read(int32_t fd, void* buf, uint32_t count);
+int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence);
+int32_t sys_unlink(const char* pathname);
+int32_t sys_mkdir(const char* pathname);
 #endif

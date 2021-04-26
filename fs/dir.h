@@ -28,4 +28,5 @@ bool sync_dir_entry(struct dir* parent_dir, struct dir_entry* p_de, void* io_buf
 int32_t path_depth_cnt(char* pathname);
 void open_root_dir(struct partition* part);
 char* path_parse(char* pathname, char* name_store);
+bool delete_dir_entry(struct partition* part, struct dir* pdir, uint32_t inode_no, void* io_buf);
 #endif

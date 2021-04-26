@@ -218,8 +218,246 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
             printk("creating file\n");
             fd = file_create(searched_record.parent_dir, (strrchr(pathname, '/')+1), flags);
             dir_close(searched_record.parent_dir);
+            break;
+        default:
+            fd = file_open(inode_no, flags);
     }
     return fd;
+}
+
+static uint32_t fd_local2global(uint32_t local_fd) {
+    struct task_struct* cur = running_thread();
+    int32_t global_fd = cur->fd_table[local_fd];
+    ASSERT(global_fd >= 0 && global_fd < MAX_FILE_OPEN);
+    return (uint32_t)global_fd;
+}
+
+int32_t sys_close(int32_t fd) {
+    int32_t ret = -1;
+    if (fd > 2) {
+        uint32_t _fd = fd_local2global(fd);
+        ret = file_close(&file_table[_fd]);
+        ((struct task_struct*)running_thread())->fd_table[fd] = -1;
+    }
+    return ret;
+}
+
+int32_t sys_write(int32_t fd, const void* buf, uint32_t count) {
+    if (fd < 0) {
+        printk("sys_write: fd error\n");
+        return -1;
+    }
+    if (fd == stdout_no) {
+        char tmp_buf[1024] = {0};
+        memcpy(tmp_buf, buf, count);
+        console_put_str(tmp_buf);
+        return count;
+    }
+    uint32_t _fd = fd_local2global(fd);
+    struct file* wr_file = &file_table[_fd];
+    if (wr_file->fd_flag & O_WRONLY || wr_file->fd_flag & O_RDWR) {
+        uint32_t bytes_written = file_write(wr_file, buf, count);
+        return bytes_written;
+    } else {
+        console_put_str("sys_write: not allowed to write file\n");
+        return -1;
+    }
+}
+
+int32_t sys_read(int32_t fd, void* buf, uint32_t count) {
+    if (fd < 0) {
+        printk("sys_read: fd error\n");
+        return -1;
+    }
+    ASSERT(buf != NULL);
+    uint32_t _fd = fd_local2global(fd);
+    return file_read(&file_table[_fd], buf, count);
+}
+
+int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence) {
+    if (fd < 0) {
+        printk("sys_lseek: fd error\n");
+        return -1;
+    }
+    ASSERT(whence > 0 && whence < 4);
+    uint32_t _fd = fd_local2global(fd);
+    struct file* pf = &file_table[_fd];
+    int32_t new_pos = 0;
+    int32_t file_size = (int32_t)pf->fd_inode->i_size;
+    switch (whence) {
+        case SEEK_SET:
+            new_pos = offset;
+            break;
+        case SEEK_CUR:
+            new_pos = (int32_t)pf->fd_pos + offset;
+            break;
+        case SEEK_END:
+            new_pos =  file_size + offset;
+    }
+    if (new_pos < 0 || new_pos > (file_size - 1)) {
+        return -1;
+    }
+    pf->fd_pos = new_pos;
+    return pf->fd_pos;
+}
+
+int32_t sys_unlink(const char* pathname) {
+    ASSERT(strlen(pathname) < MAX_PATH_LEN);
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int inode_no = search_file(pathname, &searched_record);
+    ASSERT(inode_no != 0);
+    if (inode_no == -1) {
+        printk("file %s not found\n", pathname);
+        dir_close(searched_record.parent_dir);
+        return -1;
+    }
+    if (searched_record.file_type == FT_DIRECTORY) {
+        printk("can not delete a directory with unlink\n");
+        dir_close(searched_record.parent_dir);
+        return -1;
+    }
+    int32_t file_idx = 0;
+    while (file_idx < MAX_FILE_OPEN) {
+        if (file_table[file_idx].fd_inode != NULL && (uint32_t)inode_no == file_table[file_idx].fd_inode->i_no) {
+            break;
+        }
+        file_idx++;
+    }
+    if (file_idx < MAX_FILE_OPEN) {
+        dir_close(searched_record.parent_dir);
+        printk("file %s is in use, not allow to unlink\n", pathname);
+        return -1;
+    }
+    ASSERT(file_idx == MAX_FILE_OPEN);
+    void* io_buf = sys_malloc(SECTOR_SIZE + SECTOR_SIZE);
+    if (io_buf == NULL) {
+        dir_close(searched_record.parent_dir);
+        printk("sys_unlink malloc failed\n", pathname);
+        return -1;
+    }
+    struct dir* parent_dir = searched_record.parent_dir;
+    delete_dir_entry(cur_part, parent_dir, inode_no, io_buf);
+    inode_release(cur_part, inode_no);
+    sys_free(io_buf);
+    dir_close(searched_record.parent_dir);
+    return 0;
+}
+
+int32_t sys_mkdir(const char* pathname) {
+   uint8_t rollback_step = 0;	       // 用于操作失败时回滚各资源状态
+   void* io_buf = sys_malloc(SECTOR_SIZE * 2);
+   if (io_buf == NULL) {
+      printk("sys_mkdir: sys_malloc for io_buf failed\n");
+      return -1;
+   }
+
+   struct path_search_record searched_record;
+   memset(&searched_record, 0, sizeof(struct path_search_record));
+   int inode_no = -1;
+   inode_no = search_file(pathname, &searched_record);
+   if (inode_no != -1) {      // 如果找到了同名目录或文件,失败返回
+      printk("sys_mkdir: file or directory %s exist!\n", pathname);
+      rollback_step = 1;
+      goto rollback;
+   } else {	     // 若未找到,也要判断是在最终目录没找到还是某个中间目录不存在
+      uint32_t pathname_depth = path_depth_cnt((char*)pathname);
+      uint32_t path_searched_depth = path_depth_cnt(searched_record.searched_path);
+      /* 先判断是否把pathname的各层目录都访问到了,即是否在某个中间目录就失败了 */
+      if (pathname_depth != path_searched_depth) {   // 说明并没有访问到全部的路径,某个中间目录是不存在的
+	 printk("sys_mkdir: can`t access %s, subpath %s is`t exist\n", pathname, searched_record.searched_path);
+	 rollback_step = 1;
+	 goto rollback;
+      }
+   }
+
+   struct dir* parent_dir = searched_record.parent_dir;
+   /* 目录名称后可能会有字符'/',所以最好直接用searched_record.searched_path,无'/' */
+   char* dirname = strrchr(searched_record.searched_path, '/') + 1;
+
+   inode_no = inode_bitmap_alloc(cur_part); 
+   if (inode_no == -1) {
+      printk("sys_mkdir: allocate inode failed\n");
+      rollback_step = 1;
+      goto rollback;
+   }
+
+   struct inode new_dir_inode;
+   inode_init(inode_no, &new_dir_inode);	    // 初始化i结点
+
+   uint32_t block_bitmap_idx = 0;     // 用来记录block对应于block_bitmap中的索引
+   int32_t block_lba = -1;
+/* 为目录分配一个块,用来写入目录.和.. */
+   block_lba = block_bitmap_alloc(cur_part);
+   if (block_lba == -1) {
+      printk("sys_mkdir: block_bitmap_alloc for create directory failed\n");
+      rollback_step = 2;
+      goto rollback;
+   }
+   new_dir_inode.i_sectors[0] = block_lba;
+   /* 每分配一个块就将位图同步到硬盘 */
+   block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+   ASSERT(block_bitmap_idx != 0);
+   bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+   
+   /* 将当前目录的目录项'.'和'..'写入目录 */
+   memset(io_buf, 0, SECTOR_SIZE * 2);	 // 清空io_buf
+   struct dir_entry* p_de = (struct dir_entry*)io_buf;
+   
+   /* 初始化当前目录"." */
+   memcpy(p_de->filename, ".", 1);
+   p_de->i_no = inode_no ;
+   p_de->f_type = FT_DIRECTORY;
+
+   p_de++;
+   /* 初始化当前目录".." */
+   memcpy(p_de->filename, "..", 2);
+   p_de->i_no = parent_dir->inode->i_no;
+   p_de->f_type = FT_DIRECTORY;
+   ide_write(cur_part->my_disk, new_dir_inode.i_sectors[0], io_buf, 1);
+
+   new_dir_inode.i_size = 2 * cur_part->sb->dir_entry_size;
+
+   /* 在父目录中添加自己的目录项 */
+   struct dir_entry new_dir_entry;
+   memset(&new_dir_entry, 0, sizeof(struct dir_entry));
+   create_dir_entry(dirname, inode_no, FT_DIRECTORY, &new_dir_entry);
+   memset(io_buf, 0, SECTOR_SIZE * 2);	 // 清空io_buf
+   if (!sync_dir_entry(parent_dir, &new_dir_entry, io_buf)) {	  // sync_dir_entry中将block_bitmap通过bitmap_sync同步到硬盘
+      printk("sys_mkdir: sync_dir_entry to disk failed!\n");
+      rollback_step = 2;
+      goto rollback;
+   }
+
+   /* 父目录的inode同步到硬盘 */
+   memset(io_buf, 0, SECTOR_SIZE * 2);
+   inode_sync(cur_part, parent_dir->inode, io_buf);
+
+   /* 将新创建目录的inode同步到硬盘 */
+   memset(io_buf, 0, SECTOR_SIZE * 2);
+   inode_sync(cur_part, &new_dir_inode, io_buf);
+
+   /* 将inode位图同步到硬盘 */
+   bitmap_sync(cur_part, inode_no, INODE_BITMAP);
+
+   sys_free(io_buf);
+
+   /* 关闭所创建目录的父目录 */
+   dir_close(searched_record.parent_dir);
+   return 0;
+
+/*创建文件或目录需要创建相关的多个资源,若某步失败则会执行到下面的回滚步骤 */
+rollback:	     // 因为某步骤操作失败而回滚
+   switch (rollback_step) {
+      case 2:
+	 bitmap_set(&cur_part->inode_bitmap, inode_no, 0);	 // 如果新文件的inode创建失败,之前位图中分配的inode_no也要恢复 
+      case 1:
+	 /* 关闭所创建目录的父目录 */
+	 dir_close(searched_record.parent_dir);
+	 break;
+   }
+   sys_free(io_buf);
+   return -1;
 }
 
 void filesys_init() {
