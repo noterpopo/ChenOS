@@ -30,6 +30,26 @@ int main(void) {
         printf("%s\n", buf);
         sys_close(fd);
     }
+    struct dir* p_dir = sys_opendir("/dir");
+    if (p_dir) {
+        printf("open dir done\n");
+        char* type = NULL;
+        struct dir_entry* dir_e = NULL;
+        while ((dir_e = sys_readdir(p_dir))) {
+            if (dir_e->f_type == FT_REGULAR) {
+                type = "regular";
+            } else {
+                type = "dire";
+            }
+            printf("%s %s\n", type, dir_e->filename);
+        }
+        char cwd_buf[32] = {0};
+        sys_getcwd(cwd_buf, 32);
+        printf("cwd: %s", cwd_buf);
+        sys_ch_dir("/dir");
+        sys_getcwd(cwd_buf, 32);
+        printf("cwd: %s", cwd_buf);
+    }
     while(1);
     return 0;
 }

@@ -67,6 +67,7 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
     for (int i = 3; i < MAX_FILES_OPEN_PER_PROC; i++) {
         pthread->fd_table[i] = -1;
     }
+    pthread->cwd_inode_nr = 0;
     pthread->stack_magic = 0x19980711;
 }
 

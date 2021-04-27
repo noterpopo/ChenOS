@@ -65,6 +65,7 @@ struct task_struct {
     uint32_t* pgdir;
     struct virtual_addr userproc_vaddr;
     struct mem_block_desc u_block_desc[DESC_CNT];
+    uint32_t cwd_inode_nr;
     uint32_t stack_magic;
 };
 extern struct list thread_ready_list;
