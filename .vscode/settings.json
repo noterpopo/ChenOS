@@ -4,6 +4,9 @@
         "memory.h": "c",
         "file.h": "c",
         "ide.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "global.h": "c",
+        "bitmap.h": "c",
+        "print.h": "c"
     }
 }

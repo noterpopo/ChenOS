@@ -66,6 +66,7 @@ struct task_struct {
     struct virtual_addr userproc_vaddr;
     struct mem_block_desc u_block_desc[DESC_CNT];
     uint32_t cwd_inode_nr;
+    int16_t parent_pid;
     uint32_t stack_magic;
 };
 extern struct list thread_ready_list;
@@ -78,4 +79,5 @@ void thread_unblock(struct task_struct* pthread);
 void thread_create(struct task_struct* pthread, thread_func function, void* func_arg);
 void init_thread(struct task_struct* pthread, char* name, int prio);
 void thread_yield(void);
+pid_t fork_pid(void);
 #endif

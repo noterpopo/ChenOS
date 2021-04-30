@@ -8,4 +8,5 @@
 #define USER_VADDR_START 0x8048000 //elf文件起始地址
 void process_activite(struct task_struct* pthread);
 void process_execute(void* filename, char* name);
+void page_dir_activate(struct task_struct* pthread);
 #endif

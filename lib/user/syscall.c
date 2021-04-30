@@ -47,3 +47,19 @@ void free(void* ptr) {
 uint32_t write(int32_t fd, const void* buf, uint32_t count) {
     return _syscall3(SYS_WRITE, fd, buf, count);
 }
+
+pid_t fork(void) {
+    return _syscall0(SYS_FORK);
+}
+
+int32_t read(int32_t fd, void* buf, uint32_t count) {
+    return _syscall3(SYS_READ, fd, buf, count);
+}
+
+void putchar(char char_ascii) {
+    _syscall1(SYS_PUTCHAR, char_ascii);
+}
+
+void clear(void) {
+    _syscall0(SYS_CLEAR);
+}

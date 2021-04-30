@@ -17,6 +17,7 @@ struct lock pid_lock;
 
 
 extern void switch_to(struct task_struct* cur, struct task_struct* next);
+extern void init(void);
 
 struct task_struct* running_thread() {
     uint32_t esp;
@@ -68,6 +69,7 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
         pthread->fd_table[i] = -1;
     }
     pthread->cwd_inode_nr = 0;
+    pthread->parent_pid = -1;
     pthread->stack_magic = 0x19980711;
 }
 
@@ -152,11 +154,16 @@ void thread_yield(void) {
     intr_set_status(old_status);
 }
 
+pid_t fork_pid(void) {
+    return allocate_pid();
+}
+
 void thread_init() {
     put_str("thread_init_start\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
     lock_init(&pid_lock);
+    process_execute(init, "init");
     make_main_thread();
     ide_thread = thread_start("idle", 10, idle, NULL);
     put_str("thread_init_done\n");
