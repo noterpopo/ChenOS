@@ -3,6 +3,8 @@
 #include "debug.h"
 #include "syscall.h"
 #include "file.h"
+#include "buildin_cmd.h"
+#include "string.h"
 
 #define cmd_len 128
 #define MAX_ARG_NR 16
@@ -10,7 +12,7 @@
 static char cmd_line[cmd_len] = {0};
 char final_path[MAX_PATH_LEN] = {0}; 
 
-char cwd_cache[64] = {0};
+char cwd_cache[MAX_PATH_LEN] = {0};
 
 void print_format(void) {
     printf("[noterpopo@localhost %s]", cwd_cache);
@@ -103,12 +105,28 @@ void my_shell(void) {
             printf("num of arguments exceed %d\n", MAX_ARG_NR);
             continue;
         }
-        int32_t arg_idx = 0;
-        while (arg_idx < argc) {
-            printf("%s ", argv[arg_idx]);
-            arg_idx++;
+        if (!strcmp("ls", argv[0])) {
+            buildin_ls(argc, argv);
+        } else if (!strcmp("cd", argv[0])) {
+            if (buildin_cd(argc, argv) != NULL) {
+                memset(cwd_cache, 0, MAX_PATH_LEN);
+                strcpy(cwd_cache, final_path);
+            }
+        } else if (!strcmp("pwd", argv[0])) {
+            buildin_pwd(argc, argv);
+        } else if (!strcmp("ps", argv[0])) {
+            buildin_ps(argc, argv);
+        } else if (!strcmp("clear", argv[0])) {
+            buildin_clear(argc, argv);
+        } else if (!strcmp("mkdir", argv[0])) {
+            buildin_mkdir(argc, argv);
+        } else if (!strcmp("rmdir", argv[0])) {
+            buildin_rmdir(argc, argv);
+        } else if (!strcmp("rm", argv[0])) {
+            buildin_rm(argc, argv);
+        } else {
+            printf("extrenal command\n");
         }
-        printf("\n");
     }
     PAINC("my_shell: should not be here");
 }

@@ -17,7 +17,6 @@ int main(void) {
     init_all();
     cls_screen();
     console_put_str("[noterpopo@localhost /]$ ");
-    ps();
     while(1);
     return 0;
 }

@@ -37,7 +37,8 @@ OBJS =  $(BUILD_DIR)/main.o \
 		$(BUILD_DIR)/dir.o \
 		$(BUILD_DIR)/fs.o \
 		$(BUILD_DIR)/fork.o \
-		$(BUILD_DIR)/shell.o
+		$(BUILD_DIR)/shell.o \
+		$(BUILD_DIR)/buildin_cmd.o
 
 
 $(BUILD_DIR)/main.o: kernel/main.c lib/kernel/print.h lib/user/syscall.h device/ide.h fs/fs.h shell/shell.h\
@@ -147,7 +148,12 @@ $(BUILD_DIR)/fork.o: userproc/fork.c userproc/fork.h  fs/fs.c fs/fs.h fs/dir.h f
 				lib/stdint.h lib/kernel/io.h kernel/global.h kernel/debug.h kernel/memory.h lib/kernel/stdio-kernel.h lib/kernel/list.h lib/string.h
 				$(CC) $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/shell.o: shell/shell.c shell/shell.h userproc/fork.c userproc/fork.h  fs/fs.c fs/fs.h fs/dir.h fs/file.h fs/inode.h fs/super_block.h device/ide.c device/ide.h thread/sync.h lib/kernel/list.h\
+$(BUILD_DIR)/shell.o: shell/shell.c shell/shell.h shell/buildin_cmd.h userproc/fork.c userproc/fork.h fs/fs.c fs/fs.h fs/dir.h fs/file.h fs/inode.h fs/super_block.h device/ide.c device/ide.h thread/sync.h lib/kernel/list.h\
+				thread/sync.h lib/kernel/bitmap.h kernel/interrupt.h thread/thread.h\
+				lib/stdint.h lib/kernel/io.h kernel/global.h kernel/debug.h kernel/memory.h lib/kernel/stdio-kernel.h lib/kernel/list.h lib/string.h
+				$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/buildin_cmd.o: shell/buildin_cmd.c shell/buildin_cmd.h shell/shell.h userproc/fork.c userproc/fork.h  fs/fs.c fs/fs.h fs/dir.h fs/file.h fs/inode.h fs/super_block.h device/ide.c device/ide.h thread/sync.h lib/kernel/list.h\
 				thread/sync.h lib/kernel/bitmap.h kernel/interrupt.h thread/thread.h\
 				lib/stdint.h lib/kernel/io.h kernel/global.h kernel/debug.h kernel/memory.h lib/kernel/stdio-kernel.h lib/kernel/list.h lib/string.h
 				$(CC) $(CFLAGS) $< -o $@
