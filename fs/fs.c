@@ -647,7 +647,7 @@ char* sys_getcwd(char* buf, uint32_t size) {
    return buf;
 }
 
-int32_t sys_ch_dir(const char* path) {
+int32_t sys_chdir(const char* path) {
     int32_t retval = -1;
     struct path_search_record searched_record;
     memset(&searched_record, 0, sizeof(struct path_search_record));

@@ -7,6 +7,7 @@
         "string.h": "c",
         "global.h": "c",
         "bitmap.h": "c",
-        "print.h": "c"
+        "print.h": "c",
+        "fs.h": "c"
     }
 }

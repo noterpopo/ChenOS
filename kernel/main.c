@@ -10,12 +10,14 @@
 #include "memory.h"
 #include "ide.h"
 #include "fs.h"
+#include "shell.h"
 void init(void);
 int main(void) {
     put_str("I am kernel.\n");
     init_all();
     cls_screen();
     console_put_str("[noterpopo@localhost /]$ ");
+    ps();
     while(1);
     return 0;
 }
@@ -23,9 +25,9 @@ int main(void) {
 void init(void) {
     uint32_t ret_pid = fork();
     if (ret_pid) {
-        printf("i am father . child pid is %d\n", ret_pid);
+        while(1);
     } else {
-        printf("i am child .  ret pid is %d\n", ret_pid);
+        my_shell();
     }
-    while(1);
+    PAINC("init: should not be here");
 }
