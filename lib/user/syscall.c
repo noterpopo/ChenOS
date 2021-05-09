@@ -133,3 +133,7 @@ int32_t chdir(const char* path) {
 void ps(void) {
    _syscall0(SYS_PS);
 }
+
+int32_t exec(const char* path, const char* argv[]) {
+   _syscall2(SYS_EXEC, path, argv);
+}

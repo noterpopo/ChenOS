@@ -4,6 +4,7 @@
 #include "list.h"
 #include "memory.h"
 #define MAX_FILES_OPEN_PER_PROC 8
+#define TASK_NAME_LEN 16
 typedef void thread_func(void*);
 typedef int16_t pid_t;
 

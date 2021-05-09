@@ -221,11 +221,11 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
     int32_t bit_idx = -1;
     if (cur->pgdir != NULL && pf == PF_USER) {
         bit_idx = (vaddr - cur->userproc_vaddr.vaddr_start) / PG_SIZE;
-        ASSERT(bit_idx > 0);
+        ASSERT(bit_idx >= 0);
         bitmap_set(&cur->userproc_vaddr.vaddr_bitmap, bit_idx, 1);
     } else if (cur->pgdir == NULL && pf == PF_KERNEL) {
         bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
-        ASSERT(bit_idx > 0);
+        ASSERT(bit_idx >= 0);
         bitmap_set(&kernel_vaddr.vaddr_bitmap, bit_idx, 1);
     } else {
         PAINC("get_a_page: not allow kernel alloc userspace or user alloc kernelspace by get_a_page\n");

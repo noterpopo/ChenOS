@@ -34,7 +34,6 @@ Use this to run the kernel!
 
 ```
 bochs -f bochs
-
 ```
 
 Note: You shounld use this command under the default dir.

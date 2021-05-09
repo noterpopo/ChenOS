@@ -8,6 +8,11 @@
         "global.h": "c",
         "bitmap.h": "c",
         "print.h": "c",
-        "fs.h": "c"
+        "fs.h": "c",
+        "exec.h": "c",
+        "assert.h": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "debug.h": "c"
     }
 }

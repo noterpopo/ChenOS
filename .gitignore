@@ -1,2 +1,6 @@
 /build/
 compile.txt
+/command/
+!/command/*.c
+!/command/*.sh
+!/command/*.S
