@@ -1,5 +1,7 @@
 # ChenOS
 
+[中文](./README-zh.md) | [English](./README.md)
+
 ![banner](https://img.shields.io/badge/version-v1.0.0-brightgreen)
 
 ChenOS is an UNIX-like operating system kernel.
